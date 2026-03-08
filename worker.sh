@@ -95,3 +95,8 @@ sudo apt-mark hold kubelet kubeadm kubectl
 
 echo "-------------Printing Kubeadm version-------------"
 kubeadm version
+
+
+# Install NFS client
+echo "-------------Installing NFS client-------------"
+sudo apt install nfs-common -y

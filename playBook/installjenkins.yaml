@@ -1,0 +1,57 @@
+---
+- name: Install Jenkins on Ubuntu
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install OpenJDK 17 (Required for Jenkins)
+      apt:
+        name: openjdk-17-jdk
+        state: present
+
+    - name: Ensure dependencies are installed
+      apt:
+        name:
+          - curl
+          - gnupg
+          - software-properties-common
+        state: present
+
+    - name: Add Jenkins GPG key
+      apt_key:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+        state: present
+
+    - name: Add Jenkins Repository
+      apt_repository:
+        repo: "deb https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        update_cache: yes
+        state: present
+
+    - name: Ensure Jenkins is started and enabled
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    - name: Wait for Jenkins to generate the initial admin password
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+
+    - name: Output Initial Admin Password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: admin_password
+
+    - name: Print Admin Password
+      debug:
+        msg: "Mật khẩu Admin lần đầu của bạn là: {{ admin_password.stdout }}"

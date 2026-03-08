@@ -1,6 +1,6 @@
 ---
 - name: Cài đặt và cấu hình NGINX Web Server
-  hosts: local
+  hosts: all
   become: yes # Chạy với quyền sudo
   gather_facts: yes
   vars:

@@ -1,12 +1,51 @@
-resource "aws_security_group" "k8s_master" {
-  name        = "k8s_master_sg"
-  description = "k8s master sg"
+resource "aws_security_group" "k8s_nfs" {
+  name        = "k8s_nfs"
+  description = "k8s nfs"
   vpc_id      = data.aws_vpc.dattran_vpc.id
 
   tags = {
-    Name = "k8s_master_sg"
+    Name = "k8s_nfs"
   }
 }
+# allow all traffic from VPN security group
+resource "aws_vpc_security_group_ingress_rule" "allow_all_traffic_nfs_vpn" {
+  security_group_id            = aws_security_group.k8s_nfs.id
+  referenced_security_group_id = aws_security_group.k8s_vpn.id
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1"
+}
+
+# allow all traffic from master security group
+resource "aws_vpc_security_group_ingress_rule" "allow_all_traffic_nfs_master" {
+  security_group_id            = aws_security_group.k8s_nfs.id
+  referenced_security_group_id = aws_security_group.k8s_master.id
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1"
+
+}
+resource "aws_vpc_security_group_ingress_rule" "allow_all_traffic_nfs_worker" {
+  security_group_id            = aws_security_group.k8s_nfs.id
+  referenced_security_group_id = aws_security_group.k8s_worker.id
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1"
+
+}
+
+resource "aws_vpc_security_group_ingress_rule" "allow_all_inbound" {
+  security_group_id = aws_security_group.k8s_nfs.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1"
+}
+
+resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_nfs" {
+  security_group_id = aws_security_group.k8s_nfs.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1" # semantically equivalent to all ports
+}
+
+#k8s nginx lb
 resource "aws_security_group" "k8s_nginx_lb" {
   name        = "k8s_nginx_lb_sg"
   description = "k8s nginx lb sg"
@@ -24,6 +63,15 @@ resource "aws_vpc_security_group_ingress_rule" "SSH_nginx_lb" {
   ip_protocol = "tcp"
   to_port     = 22
 }
+#allow 9991 of jenkins
+resource "aws_vpc_security_group_ingress_rule" "allow_jenkins" {
+  security_group_id = aws_security_group.k8s_nginx_lb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  from_port   = 9991
+  ip_protocol = "tcp"
+  to_port     = 9991
+}
 resource "aws_vpc_security_group_ingress_rule" "allow_http" {
   security_group_id = aws_security_group.k8s_nginx_lb.id
   cidr_ipv4         = "0.0.0.0/0"
@@ -40,6 +88,24 @@ resource "aws_vpc_security_group_ingress_rule" "allow_https" {
   ip_protocol = "tcp"
   to_port     = 443
 }
+# egress allow all
+resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_nginx_lb" {
+  security_group_id = aws_security_group.k8s_nginx_lb.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  ip_protocol = "-1" # semantically equivalent to all ports
+}
+
+# k8s master
+resource "aws_security_group" "k8s_master" {
+  name        = "k8s_master_sg"
+  description = "k8s master sg"
+  vpc_id      = data.aws_vpc.dattran_vpc.id
+
+  tags = {
+    Name = "k8s_master_sg"
+  }
+}
 
 
 resource "aws_vpc_security_group_ingress_rule" "SSH" {
@@ -50,6 +116,22 @@ resource "aws_vpc_security_group_ingress_rule" "SSH" {
   ip_protocol = "tcp"
   to_port     = 22
 }
+resource "aws_vpc_security_group_ingress_rule" "Rancher_HTTPS" {
+  security_group_id = aws_security_group.k8s_master.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  from_port   = 444
+  ip_protocol = "tcp"
+  to_port     = 444
+}
+# resource "aws_vpc_security_group_ingress_rule" "Rancher_HTTP" {
+#   security_group_id = aws_security_group.k8s_master.id
+#   cidr_ipv4         = "0.0.0.0/0"
+#   #cidr_ipv6         = "::/0"
+#   from_port   = 81
+#   ip_protocol = "tcp"
+#   to_port     = 81
+# }
 
 resource "aws_vpc_security_group_ingress_rule" "api_server" {
   security_group_id = aws_security_group.k8s_master.id
@@ -148,8 +230,17 @@ resource "aws_vpc_security_group_ingress_rule" "HTTP_8080" {
   ip_protocol = "tcp"
   to_port     = 8080
 }
+resource "aws_vpc_security_group_ingress_rule" "internal_traffic_master" {
+  security_group_id            = aws_security_group.k8s_master.id
+  referenced_security_group_id = aws_security_group.k8s_nginx_lb.id
+  # cidr_ipv4                    = "10.0.0.0/16"
+  #cidr_ipv6         = "::/0"
+  from_port   = 0
+  ip_protocol = "tcp"
+  to_port     = 65535
+}
 
-resource "aws_vpc_security_group_egress_rule" "allow_all_traffic" {
+resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_master" {
   security_group_id = aws_security_group.k8s_master.id
   cidr_ipv4         = "0.0.0.0/0"
   #cidr_ipv6         = "::/0"
@@ -168,6 +259,17 @@ resource "aws_security_group" "k8s_worker" {
   }
 }
 
+#allow all traffic from nginx lb security group
+
+resource "aws_vpc_security_group_ingress_rule" "internal_traffic_worker" {
+  security_group_id            = aws_security_group.k8s_worker.id
+  referenced_security_group_id = aws_security_group.k8s_nginx_lb.id
+  # cidr_ipv4                    = "10.0.0.0/16"
+  #cidr_ipv6         = "::/0"
+  from_port   = 0
+  ip_protocol = "tcp"
+  to_port     = 65535
+}
 resource "aws_vpc_security_group_ingress_rule" "SSH_worker" {
   security_group_id = aws_security_group.k8s_worker.id
   cidr_ipv4         = "0.0.0.0/0"
@@ -262,5 +364,24 @@ resource "aws_vpc_security_group_egress_rule" "allow_all_traffic_worker" {
   security_group_id = aws_security_group.k8s_worker.id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1" # semantically equivalent to all ports
+}
+
+#NFS server
+resource "aws_security_group" "nfs" {
+  name        = "nfs_sg"
+  description = "nfs sg"
+  vpc_id      = data.aws_vpc.dattran_vpc.id
+
+  tags = {
+    Name = "nfs_sg"
+  }
+}
+resource "aws_vpc_security_group_ingress_rule" "NFS_server" {
+  security_group_id = aws_security_group.nfs.id
+  cidr_ipv4         = "0.0.0.0/0"
+  #cidr_ipv6         = "::/0"
+  from_port   = 2049
+  ip_protocol = "tcp"
+  to_port     = 2049
 }
 

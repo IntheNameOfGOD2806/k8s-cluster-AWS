@@ -14,3 +14,17 @@ data "aws_subnet" "dattran_subnet" {
   }
   vpc_id = data.aws_vpc.dattran_vpc.id
 }
+data "aws_subnet" "dattran_subnet-1" {
+  filter {
+    name   = "tag:Name"
+    values = ["public-subnet-1"]
+  }
+  vpc_id = data.aws_vpc.dattran_vpc.id
+}
+data "aws_subnet" "dattran_private_subnet" {
+  filter {
+    name   = "tag:Name"
+    values = ["private-subnet-1(real)"]
+  }
+  vpc_id = data.aws_vpc.dattran_vpc.id
+}

@@ -1,0 +1,77 @@
+---
+- name: Setup CI/CD Runner Environment
+  hosts: all
+  become: yes
+  vars:
+    # Cấu hình phiên bản nodejs nếu cần cho Front-end dev
+    node_version: "20.x"
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - git
+        state: present
+
+    # --- CÀI ĐẶT DOCKER ---
+    - name: Add Docker GPG key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: "deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ ansible_distribution_release }} stable"
+        state: present
+
+    - name: Install Docker Engine
+      apt:
+        name:
+          - docker-ce
+          - docker-ce-cli
+          - containerd.io
+        state: present
+
+    - name: Ensure Docker is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    # --- CÀI ĐẶT KUBECTL ---
+    - name: Download kubectl binary
+      get_url:
+        url: "https://dl.k8s.io/release/{{ lookup('pipe', 'curl -L -s https://dl.k8s.io/release/stable.txt') }}/bin/linux/amd64/kubectl"
+        dest: /usr/local/bin/kubectl
+        mode: "0755"
+
+    # # --- CÀI ĐẶT NODEJS (Cho Front-end Build) ---
+    # - name: Install Node.js
+    #   shell: |
+    #     curl -fsSL https://deb.nodesource.com/setup_{{ node_version }} | bash -
+    #     apt-get install -y nodejs
+
+    # # --- CÀI ĐẶT GITLAB RUNNER (Ví dụ dùng GitLab) ---
+    # - name: Add GitLab Runner Repository
+    #   shell: curl -L "https://packages.gitlab.com/install/repositories/runner/gitlab-runner/script.deb.sh" | bash
+
+    # - name: Install GitLab Runner
+    #   apt:
+    #     name: gitlab-runner
+    #     state: present
+
+    # # --- CẤU HÌNH QUYỀN ---
+    # - name: Add gitlab-runner user to docker group
+    #   user:
+    #     name: gitlab-runner
+    #     groups: docker
+    #     append: yes

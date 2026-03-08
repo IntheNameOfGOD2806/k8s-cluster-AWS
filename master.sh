@@ -120,3 +120,6 @@ chown ubuntu:ubuntu /home/ubuntu/join-command.sh
 chmod +x /home/ubuntu/join-command.sh
 
 echo "Master node setup complete!"
+
+# Install NFS server
+sudo apt install nfs-common -y

@@ -1,0 +1,96 @@
+---
+- name: Install Jenkins and Configure Port 9991
+  hosts: all
+  become: yes
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install OpenJDK 17 and dependencies
+      apt:
+        name:
+          - openjdk-17-jdk
+          - curl
+          - gnupg
+          - software-properties-common
+        state: present
+
+    # Xóa file cũ lỗi nếu có để tránh xung đột
+    - name: Remove old Jenkins list if exists
+      file:
+        path: /etc/apt/sources.list.d/jenkins.list
+        state: absent
+
+    - name: Ensure keyrings directory exists
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: "0755"
+
+    - name: Download Jenkins GPG key (official)
+      get_url:
+        url: https://pkg.jenkins.io/debian-stable/jenkins.io-2026.key
+        dest: /etc/apt/keyrings/jenkins-keyring.asc
+        mode: "0644"
+
+    # - name: Convert Jenkins key to gpg
+    #   command: >
+    #     gpg --dearmor
+    #     -o /usr/share/keyrings/jenkins-keyring.gpg
+    #     /usr/share/keyrings/jenkins-keyring.asc
+    #   args:
+    #     creates: /usr/share/keyrings/jenkins-keyring.gpg
+
+    - name: Add Jenkins repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/jenkins-keyring.asc] https://pkg.jenkins.io/debian-stable binary/"
+        state: present
+        filename: jenkins
+        update_cache: yes
+    - name: Install Jenkins
+      apt:
+        name: jenkins
+        state: present
+
+    # Đổi cổng từ 8080 sang 9991 trong file service của systemd
+    - name: Change Jenkins port to 9991
+      lineinfile:
+        path: /lib/systemd/system/jenkins.service
+        regexp: '^Environment="JENKINS_PORT=8080"'
+        line: 'Environment="JENKINS_PORT=9991"'
+      register: jenkins_port_config
+
+    - name: Reload systemd and restart Jenkins
+      systemd:
+        name: jenkins
+        state: restarted
+        daemon_reload: yes
+      when: jenkins_port_config.changed
+
+    - name: Ensure Jenkins is started and enabled
+      service:
+        name: jenkins
+        state: started
+        enabled: yes
+
+    # # Mở port 9991 trên firewall UFW (nếu server có dùng)
+    # - name: Allow Jenkins port 9991 in UFW
+    #   ufw:
+    #     rule: allow
+    #     port: "9991"
+    #     proto: tcp
+
+    - name: Wait for initial password file
+      wait_for:
+        path: /var/lib/jenkins/secrets/initialAdminPassword
+        state: present
+
+    - name: Read Initial Admin Password
+      command: cat /var/lib/jenkins/secrets/initialAdminPassword
+      register: admin_password
+      changed_when: false
+
+    - name: Print Admin Password
+      debug:
+        msg: "Jenkins OK! Truy cập: http://{{ ansible_host | default(inventory_hostname) }}:9991 - Password: {{ admin_password.stdout }}"

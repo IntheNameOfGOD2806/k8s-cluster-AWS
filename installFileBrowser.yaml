@@ -1,6 +1,6 @@
 ---
 - name: Triển khai File Browser để quản lý toàn bộ hệ thống file
-  hosts: k8s-master
+  hosts: h2q-105
   become: yes # Yêu cầu quyền root để mount / và cài đặt phần mềm
 
   tasks:
@@ -30,7 +30,7 @@
         # Chạy bằng user root (0:0) để có quyền đọc/ghi vào thư mục / của máy chủ
         user: "0:0"
         ports:
-          - "8080:80"
+          - "8087:80"
         volumes:
           - "/:/srv" # Mount toàn bộ gốc hệ thống vào thư mục /srv của container
           - "/etc/filebrowser/filebrowser.db:/database/filebrowser.db"

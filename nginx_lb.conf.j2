@@ -1,0 +1,16 @@
+upstream my_webapp {
+{% for server in groups['webservers'] %}
+    server {{ hostvars[server]['ansible_host'] }}:31724;
+{% endfor %}
+}
+
+server {
+    listen 80;
+    server_name {{ domain_name }};
+
+    location / {
+        proxy_pass http://my_webapp;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}

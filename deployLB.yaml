@@ -1,0 +1,25 @@
+---
+- name: Cấu hình Nginx Load Balancer
+  hosts: lb_servers
+  become: yes
+  vars:
+    domain_name: "myapp.example.com"
+
+  tasks:
+    - name: Cài đặt Nginx
+      apt:
+        name: nginx
+        state: present
+        update_cache: yes
+
+    - name: Copy cấu hình từ Jinja2 template
+      template:
+        src: nginx_lb.conf.j2
+        dest: /etc/nginx/sites-available/default
+      notify: Restart Nginx
+
+  handlers:
+    - name: Restart Nginx
+      service:
+        name: nginx
+        state: restarted
