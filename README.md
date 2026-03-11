@@ -8,11 +8,10 @@ Cụm K8s bao gồm:
 
 - **1x Nginx Load Balancer (Bastion Host):** Đóng vai trò là cổng vào (entry point), đồng thời phân phối lưu lượng TCP (port 6443) đến các Master nodes.
 - **2x Master Nodes (Control Plane):** Thiết lập HA bằng `kubeadm`.
-- **Nx Worker Nodes:** Chạy các workloads của ứng dụng.
-- **1x NFS Server:** Cung cấp giải pháp lưu trữ tập trung cho các Pod (Persistent Volumes).
+- **3x Worker Nodes:** Chạy các workloads của ứng dụng.
+- **2x NFS Server:** Cung cấp giải pháp lưu trữ tập trung cho các Pod (Persistent Volumes).
 - **1x AWS ALB:** Phân phối lưu lượng HTTP/HTTPS đến các Worker nodes.
 
-## 📋 Điều Kiện Kiên Quyết
 
 Trước khi bắt đầu, hãy đảm bảo máy của bạn đã cài đặt:
 
@@ -25,7 +24,7 @@ Trước khi bắt đầu, hãy đảm bảo máy của bạn đã cài đặt:
 
 ### 1. Chuẩn bị Key Pair
 
-Nếu bạn chưa có file `k8s.pem`, hãy tạo hoặc copy private key của bạn vào thư mục này:
+ private key:
 
 ```bash
 chmod 400 k8s.pem
@@ -33,7 +32,7 @@ chmod 400 k8s.pem
 
 ### 2. Cấu hình Biến (Variables)
 
-Kiểm tra file `var.tf` để điều chỉnh các thông số như:
+ file `var.tf`
 
 - `region`: Vùng triển khai (mặc định: `ap-southeast-1`).
 - `worker_count`: Số lượng Worker nodes.
@@ -54,13 +53,12 @@ Kiểm tra các tài nguyên sẽ được tạo:
 terraform plan
 ```
 
-Tiến hành triển khai (Quá trình này mất khoảng 5-10 phút do bao gồm cả việc cài đặt Docker, K8s và cấu hình HA):
-
+Tiến hành triển khai
 ```bash
 terraform apply -auto-approve
 ```
 
-## 🚀 Sau khi triển khai thành công
+##  Sau khi triển khai thành công
 
 ### Lấy Kubeconfig
 
