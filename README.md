@@ -1,6 +1,6 @@
-# Hướng dẫn Provision Cụm Kubernetes (K8s) bằng Terraform & Ansible
 
-Repository này chứa mã nguồn để tự động hóa việc khởi tạo một cụm Kubernetes High Availability (HA) trên AWS EC2, kết hợp với Nginx Load Balancer, NFS Server và AWS Application Load Balancer.
+
+Repository này chứa mã nguồn để tự động hóa việc khởi tạo một cụm Kubernetes (HA) trên AWS EC2, kết hợp với Nginx Load Balancer, NFS Server và AWS Application Load Balancer.
 
 ## 🏗️ Kiến Trúc Hệ Thống
 
