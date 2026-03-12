@@ -20,7 +20,7 @@ Trước khi bắt đầu, hãy đảm bảo máy của bạn đã cài đặt:
 3. **AWS CLI** (đã cấu hình `aws configure`)
 4. **SSH Key:** Cần có file private key `k8s.pem` trong thư mục gốc để Terraform/Ansible có thể truy cập các instance.
 
-## 🛠️ Các Bước Thực Hiện
+##  Các Bước Thực Hiện
 
 ### 1. Chuẩn bị Key Pair
 
