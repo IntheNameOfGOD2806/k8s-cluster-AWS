@@ -44,3 +44,4 @@ data "aws_security_group" "k8s_vpn" {
   vpc_id = data.aws_vpc.dattran_vpc.id
 }
 # File: lb.tf (hoặc dán vào file hiện tại)
+

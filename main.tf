@@ -166,7 +166,7 @@ resource "aws_instance" "k8s_master" {
   }
   provisioner "remote-exec" {
     inline = [
-      "helm repo add aws-ebs-csi-driver https://kubernetes-sigs/aws-ebs-csi-driver",
+      "helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver",
       "helm repo update",
       "helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver"
     ]
@@ -185,7 +185,7 @@ resource "aws_instance" "k8s_master" {
       "helm repo add elastic https://helm.elastic.co",
       "helm repo update",
       "helm search repo elastic --version 7",
-      "helm pull elastic/elasticsearch --version 7.17.10"
+      "helm pull elastic/elasticsearch --version 7.17.3"
     ]
   }
 
@@ -208,7 +208,12 @@ resource "aws_instance" "k8s_master" {
   # }
 
 }
-
+# resource "helm_release" "aws_ebs_csi_driver" {
+#   name       = "aws-ebs-csi-driver"
+#   repository = "https://kubernetes-sigs.github.io/aws-ebs-csi-driver"
+#   chart      = "aws-ebs-csi-driver"
+#   namespace  = "kube-system"
+# }
 
 # Khởi tạo EC2 instance làm Kubernetes Master Node 2 (Control Plane dự phòng - cho High Availability)
 # Chạy ở Private Subnet, dùng Nginx LB làm Bastion. Join cluster dưới dạng control-plane và cập nhật IP vào Nginx LB.
@@ -461,6 +466,7 @@ resource "aws_lb_listener" "http" {
     target_group_arn = aws_lb_target_group.k8s_tg_lb.arn
   }
 }
+
 # resource "aws_lb_listener" "https" {
 #   load_balancer_arn = aws_lb.k8s_alb.arn
 #   port              = 443
