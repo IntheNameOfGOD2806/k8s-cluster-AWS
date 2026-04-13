@@ -1,1 +1,1 @@
-kubeadm join 10.0.1.12:6443 --token lzm5hb.bk9w9qa3ktwu5kzg --discovery-token-ca-cert-hash sha256:3a8e48551f9ad8cfbc10d343af73a2d837ded4b35a89fe68b0e7ca498b3ef12d 
+kubeadm join 10.0.1.106:6443 --token 0zy0hp.0m667euc0cjaw1ox --discovery-token-ca-cert-hash sha256:1b7f947f4cee0a2dd1cb8ce6752d771a1c5618a89e9692a3ff69173817cedde5 

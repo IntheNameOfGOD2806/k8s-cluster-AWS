@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "qlrv-fe.fullname" . }}-config
+  labels:
+    {{- include "qlrv-fe.labels" . | nindent 4 }}
+data:
+  config.js: |
+    window.env = {
+      API_ROOT: "https://api-qlrv.democloud.xyz/api",
+      BASE_URL: "https://api-qlrv.democloud.xyz",
+      HASH_KEY: "HASH_KEY",
+    }

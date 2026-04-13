@@ -1,1 +1,1 @@
-kubeadm join 10.0.1.12:6443 --token 8lhpx3.fvla5a13erwj1kos --discovery-token-ca-cert-hash sha256:3a8e48551f9ad8cfbc10d343af73a2d837ded4b35a89fe68b0e7ca498b3ef12d  --control-plane --certificate-key 845b88bc528eca855c7cbd454cfcef2fb65504eba0b77bd4702fc15ec2571688
+kubeadm join 10.0.1.106:6443 --token 37247v.tx5j61rv5ng4e07r --discovery-token-ca-cert-hash sha256:1b7f947f4cee0a2dd1cb8ce6752d771a1c5618a89e9692a3ff69173817cedde5  --control-plane --certificate-key 47674dc511a337952ed2adc7dfd74dd09dff208c7afbe658df027d7ef947cd7a

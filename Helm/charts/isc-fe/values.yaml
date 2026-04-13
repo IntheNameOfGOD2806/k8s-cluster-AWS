@@ -1,0 +1,77 @@
+replicaCount: 1
+
+image:
+  registry: 296725355870.dkr.ecr.ap-southeast-1.amazonaws.com
+  repository: isc/isc-fe-image
+  pullPolicy: IfNotPresent
+  tag: "latest"
+
+imagePullSecrets:
+  - name: isc-fe-secret
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 80
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: chart-example.local
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Environment variables to be injected via ConfigMap
+env:
+  VITE_API_URL: "https://isc-p4t8.onrender.com/api"
+  VITE_APP_NAME: "Fashion Store"
+  VITE_APP_VERSION: "1.0.0"
+  VITE_BASE_URL: "/"
+  VITE_BUILD_SOURCEMAP: "true"
+  VITE_CANCEL_URL: "https://boncauthongminh.vercel.app/checkout/cancel"
+  VITE_GEMINI_API_KEY: ""
+  VITE_RETURN_URL: "https://boncauthongminh.vercel.app/checkout/success"
+  VITE_STRIPE_PUBLISHABLE_KEY: ""

@@ -1,0 +1,73 @@
+replicaCount: 1
+
+image:
+  registry: registry.h2qsolution.com
+  repository: qlrv-dev-fe/qlrv-dev-fe-image
+  pullPolicy: Always
+  tag: "latest"
+
+imagePullSecrets:
+  - name: qlrv-fe-secret
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations: {}
+  hosts:
+    - host: qlrv.democloud.xyz
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+  tls: []
+
+resources: {}
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# Environment variables to be injected via ConfigMap
+env:
+  API_ROOT: "https://api-qlrv.democloud.xyz/api"
+
+  BASE_URL: "https://api-qlrv.democloud.xyz"
+
+  HASH_KEY: "HASH_KEY"

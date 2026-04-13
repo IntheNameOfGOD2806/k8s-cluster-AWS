@@ -1,0 +1,6 @@
+apiVersion: v2
+name: isc-be
+description: A Helm chart for ISC Backend
+type: application
+version: 0.1.1
+appVersion: "1.0.0"

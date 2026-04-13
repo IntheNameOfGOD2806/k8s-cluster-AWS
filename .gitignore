@@ -8,7 +8,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
-
+playbook
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
 
@@ -94,7 +94,7 @@ dist
 
 # vuepress build output
 .vuepress/dist
-
+.playbook
 # vuepress v2.x temp and cache directory
 .temp
 .cache

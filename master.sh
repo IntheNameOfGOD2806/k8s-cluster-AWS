@@ -6,6 +6,7 @@ echo "-------------Setting hostname-------------"
 hostnamectl set-hostname $1
 #set lb ip
 LB_IP=$2
+LB_PUBLIC_IP=$3
 
 # Disable swap
 echo "-------------Disabling swap-------------"
@@ -95,6 +96,7 @@ echo "-------------Running kubeadm init-------------"
 # Initialize the cluster with WeaveNet as the pod network
 
 kubeadm init --pod-network-cidr=10.244.0.0/16 \
+    --apiserver-cert-extra-sans="$LB_PUBLIC_IP" \
     --control-plane-endpoint="$LB_IP:6443"
 
 echo "-------------Copying Kubeconfig-------------"
@@ -132,24 +134,17 @@ sudo apt install nfs-common -y
 # Upload certs for other master nodes
 echo "-------------Generating Join Command for Master Nodes-------------"
 
-# 1. Lấy Certificate Key (loại bỏ các dòng text thừa, chỉ lấy mã hash)
 CERT_KEY=$(sudo kubeadm init phase upload-certs --upload-certs | tail -n 1)
 
-# 2. Lấy lệnh join cơ bản
 JOIN_CMD=$(sudo kubeadm token create --print-join-command)
 
-# 3. Kết hợp lại thành lệnh join cho Control Plane
-# Thêm cờ --control-plane và --certificate-key
+
 FULL_MASTER_JOIN_CMD="$JOIN_CMD --control-plane --certificate-key $CERT_KEY"
 
-# 4. Lưu ra file để sau này dùng Ansible hoặc Copy tay cho dễ
+
 echo "$FULL_MASTER_JOIN_CMD" | tee /home/ubuntu/join-command-master.sh
 
 # Phân quyền cho user ubuntu
 chown ubuntu:ubuntu /home/ubuntu/join-command-master.sh
 chmod +x /home/ubuntu/join-command-master.sh
 
-#get nodeport of ingress-nginx
-# NODE_PORT=$(kubectl get svc -A | grep ingress-nginx | grep NodePort | awk '{split($6, a, "[:/]"); print a[2]}')
-# echo "$NODE_PORT" > /home/ubuntu/nodeport.txt
-# chown ubuntu:ubuntu /home/ubuntu/nodeport.txt

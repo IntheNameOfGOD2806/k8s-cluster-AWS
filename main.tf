@@ -91,6 +91,7 @@ resource "aws_instance" "k8s_master" {
     source      = "./master.sh"
     destination = "/home/ubuntu/master.sh"
   }
+  # copy nginx_lb.conf to Nginx LB
   provisioner "file" {
     source      = "./nginx_lb.conf"
     destination = "/home/ubuntu/nginx_lb.conf"
@@ -123,7 +124,7 @@ resource "aws_instance" "k8s_master" {
   provisioner "remote-exec" {
     inline = [
       "chmod +x /home/ubuntu/master.sh",
-      "sudo sh /home/ubuntu/master.sh k8s-master ${aws_instance.k8s_nginx_lb.private_ip}"
+      "sudo sh /home/ubuntu/master.sh k8s-master ${aws_instance.k8s_nginx_lb.private_ip} ${aws_instance.k8s_nginx_lb.public_ip}"
     ]
   }
   provisioner "local-exec" {
@@ -137,75 +138,58 @@ resource "aws_instance" "k8s_master" {
     # install rancher
     command = "ansible-playbook -i '${self.public_ip},' installRancher.yaml"
   }
-  provisioner "local-exec" {
-    # fetch kubeconfig
-    command = "ansible-playbook -i '${self.public_ip},' fetchKubeConfigfromMaster.yaml"
-  }
-  provisioner "local-exec" {
-    command = "ansible-playbook -i '${self.public_ip},' installHelm.yaml"
-  }
-  provisioner "remote-exec" {
-    inline = [
-      "kubectl create namespace argocd",
-      "kubectl apply -n argocd --server-side --force-conflicts -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
-    ]
+  # provisioner "local-exec" {
+  #   # fetch kubeconfig
+  #   command = "ansible-playbook -i '${self.public_ip},' fetchKubeConfigfromMaster.yaml"
+  # }
+  # provisioner "local-exec" {
+  #   command = "ansible-playbook -i '${self.public_ip},' installHelm.yaml"
+  # }
+  # provisioner "local-exec" {
+  #   command = "ansible-playbook -i '${self.public_ip},' fetchKubeConfigfromMaster.yaml"
+  # }
+  # provisioner "remote-exec" {
+  #   inline = [
+  #     "echo 'Waiting for cluster to be ready...'",
+  #     "kubectl wait --for=condition=Ready nodes --all --timeout=300s",
+  #     "kubectl wait --for=condition=Available deployment/coredns -n kube-system --timeout=300s",
+  #   ]
+  # }
+  # provisioner "remote-exec" {
+  #   inline = [
+  #     "kubectl create namespace argocd",
+  #     "kubectl apply -n argocd  -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml"
+  #   ]
 
-  }
+  # }
   provisioner "file" {
     source      = "./storageClassEBS.yaml"
     destination = "/home/ubuntu/storageClassEBS.yaml"
   }
-  provisioner "file" {
-    source      = "./values-edit.yaml"
-    destination = "/home/ubuntu/values-edit.yaml"
-  }
+  # provisioner "file" {
+  #   source      = "./values-edit.yaml"
+  #   destination = "/home/ubuntu/values-edit.yaml"
+  # }
   provisioner "remote-exec" {
     inline = [
-      "kubectl apply -f /home/ubuntu/storageClassEBS.yaml"
+      "kubectl apply -f /home/ubuntu/storageClassEBS.yaml",
     ]
   }
-  provisioner "remote-exec" {
-    inline = [
-      "helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver",
-      "helm repo update",
-      "helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver"
-    ]
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.public_ip},' fetchKubeConfigfromMaster.yaml"
   }
-  provisioner "remote-exec" {
-    inline = [
-      "helm repo add prometheus-community https://prometheus-community.github.io/helm-charts",
-      "helm repo add grafana https://grafana.github.io/helm-charts",
-      "helm repo update",
-      "kubectl create namespace monitoring"
-    ]
+  provisioner "local-exec" {
+    command = <<EOT
+      sed -i 's|https://${aws_instance.k8s_nginx_lb.private_ip}:6443|https://${aws_instance.k8s_nginx_lb.public_ip}:6443|g' /home/dattran/.kube/config
+    EOT
   }
+
   provisioner "remote-exec" {
     inline = [
-      "kubectl create namespace logging",
-      "helm repo add elastic https://helm.elastic.co",
-      "helm repo update",
-      "helm search repo elastic --version 7",
-      "helm pull elastic/elasticsearch --version 7.17.3"
+      "sleep 20"
     ]
   }
 
-  # provisioner "remote-exec" {
-  #   inline = [
-  #     "cd /home/ubuntu",
-  #     "export HELM_MAX_INDEX_SIZE=20971520",
-  #     # "helm search repo kube-prometheus-stack",
-  #     # "helm pull prometheus-community/kube-prometheus-stack",
-  #     # "tar -xvzf kube-prometheus-stack-82.13.6.tgz",
-  #     # "cd kube-prometheus-stack",
-  #     "helm upgrade -i prometheus -n monitoring -f values-edit.yaml ."
-  #   ]
-
-  # }
-  # provisioner "remote-exec" {
-  #   inline = [
-  #     "helm upgrade -i prometheus -n monitoring -f values-edit.yaml ."
-  #   ]
-  # }
 
 }
 # resource "helm_release" "aws_ebs_csi_driver" {
@@ -315,11 +299,67 @@ resource "aws_instance" "k8s_master_2" {
       "  sudo chown $(id -u):$(id -g) $HOME/.kube/config",
       "  echo 'Cấu hình Kubeconfig thành công!'",
       "else",
-      "  echo 'Cảnh báo: Không tìm thấy admin.conf. Có thể lệnh join chưa hoàn tất đúng cách.'",
+      "  echo 'Cảnh báo: Không tìm thấy admin.conf'",
       "fi"
     ]
   }
+  provisioner "local-exec" {
+    command = <<EOT
+      helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+      helm repo update
+      helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+    EOT
+  }
 
+}
+
+# --- Deploy Helm Charts after all cluster components (Nodes/NFS) are provisioned ---
+resource "null_resource" "helm_charts" {
+  triggers = {
+    always_run = timestamp()
+  }
+  depends_on = [
+    # aws_instance.k8s_master,
+    aws_instance.k8s_master_2,
+    # aws_instance.k8s_worker,
+    # aws_instance.k8s_nfs
+  ]
+
+  provisioner "local-exec" {
+    command = <<EOT
+      helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+      helm repo add grafana https://grafana.github.io/helm-charts
+      helm repo update
+      helm upgrade -i prometheus prometheus-community/kube-prometheus-stack --version 79.7.1 -n monitoring --create-namespace -f values-edit.yaml
+    EOT
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      helm repo add elastic https://helm.elastic.co
+      helm repo update
+      cd elasticsearch
+      helm upgrade -i elasticsearch -n logging --create-namespace -f values.yaml .
+    EOT
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      helm repo add kokuwa https://kokuwaio.github.io/helm-charts
+      helm repo update
+      cd fluentd-elasticsearch
+      helm upgrade -i fluentd -n logging -f values.yaml .
+    EOT
+  }
+
+  provisioner "local-exec" {
+    command = <<EOT
+      helm repo add elastic https://helm.elastic.co
+      helm repo update
+      cd kibana
+      helm upgrade -i kibana -n logging  -f values.yaml .
+    EOT
+  }
 }
 
 # Khởi tạo các EC2 instance làm Kubernetes Worker Node
