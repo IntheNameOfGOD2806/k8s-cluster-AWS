@@ -91,6 +91,20 @@ resource "aws_instance" "k8s_master" {
     source      = "./master.sh"
     destination = "/home/ubuntu/master.sh"
   }
+  provisioner "local-exec" {
+    command = "ansible-playbook -i '${self.public_ip},' installNginx.yaml"
+  }
+  # copy nginx_master.conf to master
+  provisioner "file" {
+    source      = "./nginx_master.conf"
+    destination = "/home/ubuntu/nginx_master.conf"
+  }
+  # route traffic from rancher.tranthanhdat.org to :444
+  provisioner "remote-exec" {
+    inline = [
+      "sudo mv /home/ubuntu/nginx_master.conf /etc/nginx/sites-enabled/nginx_master.conf",
+    ]
+  }
   # copy nginx_lb.conf to Nginx LB
   provisioner "file" {
     source      = "./nginx_lb.conf"
@@ -313,7 +327,7 @@ resource "aws_instance" "k8s_master_2" {
 
 }
 
-# --- Deploy Helm Charts after all cluster components (Nodes/NFS) are provisioned ---
+# Deploy Helm Charts after all cluster components (Nodes/NFS) are provisioned
 resource "null_resource" "helm_charts" {
   triggers = {
     always_run = timestamp()
@@ -324,7 +338,14 @@ resource "null_resource" "helm_charts" {
     # aws_instance.k8s_worker,
     # aws_instance.k8s_nfs
   ]
-
+  provisioner "local-exec" {
+    command = <<-EOT
+      kubectl wait --namespace ingress-nginx \
+        --for=condition=ready pod \
+        --selector=app.kubernetes.io/component=controller \
+        --timeout=300s
+    EOT
+  }
   provisioner "local-exec" {
     command = <<EOT
       helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
